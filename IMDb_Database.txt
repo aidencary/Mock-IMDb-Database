@@ -1,0 +1,1694 @@
+-- IMDb Database
+-- M:N relationships between Movie, TV Show <---> Actor, Writer, Director
+-- 1:N relationships between Movie <---> Movie_Genre, Movie_Streaming, Movie_Review & TV_Show <---> TV_Show_Episode, TV_Show_Genre, TV_Show_Streaming, TV_Show_Review
+-- Multivalue tables between Actor, Writer, Director <---> Actor_Children, Actor_Parents, Actor_Media, Writer_Children, Writer_Parents, Writer_Media, Director_Children, Director_Parents, Director_Media
+-- Derived attributes for Actor, Writer, Director (Age), Movie, TV Show (Average Rating)
+
+-- Movie Drop Tables
+DROP TABLE Movie CASCADE CONSTRAINTS;
+DROP TABLE Movie_Genre CASCADE CONSTRAINTS;
+DROP TABLE Movie_Streaming CASCADE CONSTRAINTS;
+DROP TABLE Movie_Review CASCADE CONSTRAINTS;
+
+-- TV Show Drop Tables
+DROP TABLE TV_Show CASCADE CONSTRAINTS;
+DROP TABLE TV_Show_Episode CASCADE CONSTRAINTS;
+DROP TABLE TV_Show_Genre CASCADE CONSTRAINTS;
+DROP TABLE TV_Show_Streaming CASCADE CONSTRAINTS;
+DROP TABLE TV_Show_Review CASCADE CONSTRAINTS;
+
+-- Actor Drop Tables
+DROP TABLE Actor CASCADE CONSTRAINTS;
+DROP TABLE Actor_Children CASCADE CONSTRAINTS;
+DROP TABLE Actor_Parents CASCADE CONSTRAINTS;
+DROP TABLE Actor_Media CASCADE CONSTRAINTS;
+DROP TABLE Actor_Movie CASCADE CONSTRAINTS;
+DROP TABLE Actor_TV_Show CASCADE CONSTRAINTS;
+
+-- Writer Drop Tables
+DROP TABLE Writer CASCADE CONSTRAINTS;
+DROP TABLE Writer_Children CASCADE CONSTRAINTS;
+DROP TABLE Writer_Parents CASCADE CONSTRAINTS;
+DROP TABLE Writer_Media CASCADE CONSTRAINTS;
+DROP TABLE Writer_Movie CASCADE CONSTRAINTS;
+DROP TABLE Writer_TV_Show CASCADE CONSTRAINTS;
+
+-- Director Drop Tables
+DROP TABLE Director CASCADE CONSTRAINTS;
+DROP TABLE Director_Children CASCADE CONSTRAINTS;
+DROP TABLE Director_Parents CASCADE CONSTRAINTS;
+DROP TABLE Director_Media CASCADE CONSTRAINTS;
+DROP TABLE Director_Movie CASCADE CONSTRAINTS;
+DROP TABLE Director_TV_Show CASCADE CONSTRAINTS;
+
+-- Drop views for derived attributes
+DROP VIEW Director_With_Age;
+DROP VIEW Actor_With_Age;
+DROP VIEW Writer_With_Age;
+DROP VIEW Movie_Average_Rating;
+DROP VIEW TV_Show_Average_Rating;
+
+------------------------------------------------------------
+
+-- Movie table
+
+CREATE TABLE Movie(
+    Title       VARCHAR2(100),
+    ReleaseDate DATE,
+    RunTime     NUMBER(5, 1),
+    Description VARCHAR2(2000),
+    AgeRating   VARCHAR2(5),
+    URLID       CHAR(9) CONSTRAINT Movie_MovieID_PK PRIMARY KEY
+);
+
+-- Movie_Genre table
+
+CREATE TABLE Movie_Genre(
+    MovieID CHAR(9),
+    Genre   VARCHAR2(100),
+    CONSTRAINT Movie_Genre_PK PRIMARY KEY (MovieID, Genre)
+);
+
+-- Movie_Streaming table
+
+CREATE TABLE Movie_Streaming(
+    MovieID   CHAR(9),
+    Streaming VARCHAR2(100),
+    CONSTRAINT Movie_Streaming_PK PRIMARY KEY (MovieID, Streaming)
+);
+
+-- Movie_Review table
+
+CREATE TABLE Movie_Review (
+    MovieID    CHAR(9),
+    Title       VARCHAR2(100),
+    Reviewer       VARCHAR2(100),
+    ReviewContents VARCHAR2(1000),
+    Rating     NUMBER(2) CHECK (Rating BETWEEN 0 AND 10),
+    CONSTRAINT Movie_Review_PK PRIMARY KEY (MovieID, Reviewer)
+);
+
+-- TV_Show Table
+
+CREATE TABLE TV_Show(
+    Title       VARCHAR2(100),
+    ReleaseDate DATE,
+    Description VARCHAR2(2000),
+    AgeRating   VARCHAR2(5),
+    URLID       CHAR(9) CONSTRAINT TV_Show_TV_ShowID_PK PRIMARY KEY
+);
+
+-- TV_Show_Episode table
+
+CREATE TABLE TV_Show_Episode(
+    TV_ShowID     CHAR(9),
+    EpisodeTitle  VARCHAR2(100),
+    EpisodeNumber NUMBER(5),
+    SeasonNumber  NUMBER(2),
+    CONSTRAINT TV_Show_Episode_PK PRIMARY KEY (TV_ShowID, EpisodeNumber, SeasonNumber)
+);
+
+-- Genre table for TV_Show
+
+CREATE TABLE TV_Show_Genre(
+    TV_ShowID CHAR(9),
+    Genre     VARCHAR2(100),
+    CONSTRAINT TV_Show_Genre_PK PRIMARY KEY (TV_ShowID, Genre)
+);
+
+-- Streaming table for TV_Show
+
+CREATE TABLE TV_Show_Streaming(
+    TV_ShowID  CHAR(9),
+    Streaming  VARCHAR2(100),
+    CONSTRAINT TV_Show_Streaming_PK PRIMARY KEY (TV_ShowID, Streaming)
+);
+
+CREATE TABLE TV_Show_Review (
+    TV_ShowID    CHAR(9),
+    Title       VARCHAR2(100),
+    Reviewer       VARCHAR2(100),
+    ReviewContents VARCHAR2(1000),
+    Rating     NUMBER(2) CHECK (Rating BETWEEN 0 AND 10),
+    CONSTRAINT TV_Show_Review_PK PRIMARY KEY (TV_ShowID, Reviewer)
+);
+
+-- Director table
+
+CREATE TABLE Director(
+    URLID       CHAR(9) CONSTRAINT Director_DirectorID_PK PRIMARY KEY,
+    FirstName   VARCHAR2(100),
+    MiddleName  VARCHAR2(100) DEFAULT NULL,
+    LastName    VARCHAR2(100) DEFAULT NULL,
+    PlaceOfBirth VARCHAR2(40),
+    Height      NUMBER(2),
+    Spouse      VARCHAR2(100),
+    Award       VARCHAR2(100),
+    Bdate       DATE,
+    Biography   VARCHAR2(2000),
+    DateOfBirth DATE,
+    DateOfDeath DATE DEFAULT NULL
+);
+
+-- Director_Children table
+
+CREATE TABLE Director_Children(
+    DirectorID CHAR(9),
+    Child      VARCHAR2(100),
+    CONSTRAINT Director_Children_PK PRIMARY KEY (DirectorID, Child)
+);
+
+-- Director_Parents table
+
+CREATE TABLE Director_Parents(
+    DirectorID CHAR(9),
+    Parent     VARCHAR2(100),
+    CONSTRAINT Director_Parents_PK PRIMARY KEY (DirectorID, Parent)
+);
+
+-- Director_Media table
+
+CREATE TABLE Director_Media(
+    DirectorID CHAR(9),
+    Media      VARCHAR2(100),
+    CONSTRAINT Director_Media_PK PRIMARY KEY (DirectorID, Media)
+);
+
+-- Director_Movie junction table
+
+CREATE TABLE Director_Movie(
+    DirectorID CHAR(9),
+    MovieID    CHAR(9),
+    CONSTRAINT Director_Movie_PK PRIMARY KEY (DirectorID, MovieID)
+);
+
+-- Director_TV_Show junction table
+
+CREATE TABLE Director_TV_Show(
+    DirectorID CHAR(9),
+    TV_ShowID  CHAR(9),
+    CONSTRAINT Director_TV_Show_PK PRIMARY KEY (DirectorID, TV_ShowID)
+);
+
+-- Actor table
+
+CREATE TABLE Actor(
+    URLID       CHAR(9) CONSTRAINT Actor_ActorID_PK PRIMARY KEY,
+    FirstName   VARCHAR2(100),
+    MiddleName  VARCHAR2(100) DEFAULT NULL,
+    LastName    VARCHAR2(100) DEFAULT NULL,
+    PlaceOfBirth VARCHAR2(40),
+    Height      NUMBER(2),
+    Spouse      VARCHAR2(100),
+    Award       VARCHAR2(100),
+    Bdate       DATE,
+    Biography   VARCHAR2(2000),
+    DateOfBirth DATE,
+    DateOfDeath DATE DEFAULT NULL
+);
+
+-- Actor_Children table
+
+CREATE TABLE Actor_Children(
+    ActorID CHAR(9),
+    Child   VARCHAR2(100),
+    CONSTRAINT Actor_Children_PK PRIMARY KEY (ActorID, Child)
+);
+
+-- Actor_Parents table
+
+CREATE TABLE Actor_Parents(
+    ActorID CHAR(9),
+    Parent  VARCHAR2(100),
+    CONSTRAINT Actor_Parents_PK PRIMARY KEY (ActorID, Parent)
+);
+
+-- Actor_Media table
+
+CREATE TABLE Actor_Media(
+    ActorID CHAR(9),
+    Media   VARCHAR2(100),
+    CONSTRAINT Actor_Media_PK PRIMARY KEY (ActorID, Media)
+);
+
+-- Actor_Movie junction table
+
+CREATE TABLE Actor_Movie(
+    ActorID CHAR(9),
+    MovieID CHAR(9),
+    CONSTRAINT Actor_Movie_PK PRIMARY KEY (ActorID, MovieID)
+);
+
+-- Actor_TV_Show junction table
+
+CREATE TABLE Actor_TV_Show(
+    ActorID   CHAR(9),
+    TV_ShowID CHAR(9),
+    CONSTRAINT Actor_TV_Show_PK PRIMARY KEY (ActorID, TV_ShowID)
+);
+
+-- Writer table
+
+CREATE TABLE Writer (
+    URLID       CHAR(9) CONSTRAINT Writer_WriterID_PK PRIMARY KEY,
+    FirstName   VARCHAR2(100),
+    MiddleName  VARCHAR2(100) DEFAULT NULL,
+    LastName    VARCHAR2(100) DEFAULT NULL,
+    PlaceOfBirth VARCHAR2(40),
+    Height      NUMBER(2),
+    Spouse      VARCHAR2(100),
+    Award       VARCHAR2(100),
+    Bdate       DATE,
+    Biography   VARCHAR2(2000),
+    DateOfBirth DATE,
+    DateOfDeath DATE DEFAULT NULL
+);
+
+-- Writer_Children table
+
+CREATE TABLE Writer_Children(
+    WriterID CHAR(9),
+    Child    VARCHAR2(100),
+    CONSTRAINT Writer_Children_PK PRIMARY KEY (WriterID, Child)
+);
+
+-- Writer_Parents table
+
+CREATE TABLE Writer_Parents(
+    WriterID CHAR(9),
+    Parent   VARCHAR2(100),
+    CONSTRAINT Writer_Parents_PK PRIMARY KEY (WriterID, Parent)
+);
+
+-- Writer_Media table
+
+CREATE TABLE Writer_Media(
+    WriterID CHAR(9),
+    Media    VARCHAR2(100),
+    CONSTRAINT Writer_Media_PK PRIMARY KEY (WriterID, Media)
+);
+
+-- Writer_Movie junction table
+
+CREATE TABLE Writer_Movie(
+    WriterID CHAR(9),
+    MovieID  CHAR(9),
+    CONSTRAINT Writer_Movie_PK PRIMARY KEY (WriterID, MovieID)
+);
+
+-- Writer_TV_Show junction table
+
+CREATE TABLE Writer_TV_Show(
+    WriterID  CHAR(9),
+    TV_ShowID CHAR(9),
+    CONSTRAINT Writer_TV_Show_PK PRIMARY KEY (WriterID, TV_ShowID)
+);
+
+----------------------------------------------------------------------
+
+-- Director Foreign Keys
+
+-- Foreign Key Director_Children DirectorID that points to the URLID of the Director table
+ALTER TABLE Director_Children
+ADD CONSTRAINT director_children_fk FOREIGN KEY(DirectorID)
+REFERENCES Director(URLID);
+
+-- Foreign Key Director_Parents DirectorID that points to the URLID of the Director table
+ALTER TABLE Director_Parents
+ADD CONSTRAINT director_parents_fk FOREIGN KEY(DirectorID)
+REFERENCES Director(URLID);
+
+-- Foreign Key Director_Media DirectorID that points to the URLID of the Director table
+ALTER TABLE Director_Media
+ADD CONSTRAINT director_media_fk FOREIGN KEY(DirectorID)
+REFERENCES Director(URLID);
+
+-- Foreign Key Director_Movie DirectorID that points to the URLID of the Director table
+ALTER TABLE Director_Movie
+ADD CONSTRAINT director_movie_director_fk FOREIGN KEY(DirectorID)
+REFERENCES Director(URLID);
+
+-- Foreign Key Director_Movie MovieID that points to the URLID of the Movie table
+ALTER TABLE Director_Movie
+ADD CONSTRAINT director_movie_movie_fk FOREIGN KEY(MovieID)
+REFERENCES Movie(URLID);
+
+-- Foreign Key for Director_TV_Show: DirectorID references Director(URLID)
+ALTER TABLE Director_TV_Show
+ADD CONSTRAINT director_tv_show_director_fk FOREIGN KEY (DirectorID)
+REFERENCES Director(URLID);
+
+-- Foreign Key for Director_TV_Show: TV_ShowID references TV_Show(URLID)
+ALTER TABLE Director_TV_Show
+ADD CONSTRAINT director_tv_show_tv_show_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID);
+
+-- Actor Foreign Keys
+
+-- Foreign Key Actor_Children ActorID that points to the URLID of the Actor table
+ALTER TABLE Actor_Children
+ADD CONSTRAINT actor_children_fk FOREIGN KEY (ActorID)
+REFERENCES Actor(URLID);
+
+-- Foreign Key Actor_Parents ActorID that points to the URLID of the Actor table
+ALTER TABLE Actor_Parents
+ADD CONSTRAINT actor_parents_fk FOREIGN KEY (ActorID)
+REFERENCES Actor(URLID);
+
+-- Foreign Key Actor_Media ActorID that points to the URLID of the Actor table
+ALTER TABLE Actor_Media
+ADD CONSTRAINT actor_media_fk FOREIGN KEY (ActorID)
+REFERENCES Actor(URLID);
+
+-- Foreign Key Actor_Movie ActorID that points to the URLID of the Actor table
+ALTER TABLE Actor_Movie
+ADD CONSTRAINT actor_movie_actor_fk FOREIGN KEY (ActorID)
+REFERENCES Actor(URLID);
+
+-- Foreign Key Actor_Movie MovieID that points to the URLID of the Movie table
+ALTER TABLE Actor_Movie
+ADD CONSTRAINT actor_movie_movie_fk FOREIGN KEY (MovieID)
+REFERENCES Movie(URLID);
+
+-- Foreign Key Actor_TV_Show ActorID that points to the URLID of the Actor table
+ALTER TABLE Actor_TV_Show
+ADD CONSTRAINT actor_tv_show_actor_fk FOREIGN KEY (ActorID)
+REFERENCES Actor(URLID);
+
+-- Foreign Key Actor_TV_Show TV_ShowID that points to the URLID of the TV_Show table
+ALTER TABLE Actor_TV_Show
+ADD CONSTRAINT actor_tv_show_tv_show_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID);
+
+-- Writer Foreign Keys
+
+-- Foreign Key Writer_Children WriterID that points to the URLID of the Writer table
+ALTER TABLE Writer_Children
+ADD CONSTRAINT writer_children_fk FOREIGN KEY (WriterID)
+REFERENCES Writer(URLID);
+
+-- Foreign Key Writer_Parents WriterID that points to the URLID of the Writer table
+ALTER TABLE Writer_Parents
+ADD CONSTRAINT writer_parents_fk FOREIGN KEY (WriterID)
+REFERENCES Writer(URLID);
+
+-- Foreign Key Writer_Media WriterID that points to the URLID of the Writer table
+ALTER TABLE Writer_Media
+ADD CONSTRAINT writer_media_fk FOREIGN KEY (WriterID)
+REFERENCES Writer(URLID);
+
+-- Foreign Key Writer_Movie WriterID that points to the URLID of the Writer table
+ALTER TABLE Writer_Movie
+ADD CONSTRAINT writer_movie_writer_fk FOREIGN KEY (WriterID)
+REFERENCES Writer(URLID);
+
+-- Foreign Key Writer_Movie MovieID that points to the URLID of the Movie table
+ALTER TABLE Writer_Movie
+ADD CONSTRAINT writer_movie_movie_fk FOREIGN KEY (MovieID)
+REFERENCES Movie(URLID);
+
+-- Foreign Key Writer_TV_Show WriterID that points to the URLID of the Writer table
+ALTER TABLE Writer_TV_Show
+ADD CONSTRAINT writer_tv_show_writer_fk FOREIGN KEY (WriterID)
+REFERENCES Writer(URLID);
+
+-- Foreign Key Writer_TV_Show TV_ShowID that points to the URLID of the TV_Show table
+ALTER TABLE Writer_TV_Show
+ADD CONSTRAINT writer_tv_show_tv_show_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID);
+
+-- Movie Foreign Keys
+
+-- Foreign Key Movie GenreID that points to the GenreID of the Movie_Genre table
+ALTER TABLE Movie_Genre
+ADD CONSTRAINT movie_genre_fk FOREIGN KEY(MovieID)
+REFERENCES Movie(URLID);
+
+-- Foreign Key Movie StreamingID that points to the StreamingID of the Movie_Streaming table
+ALTER TABLE Movie_Streaming
+ADD CONSTRAINT movie_streaming_fk FOREIGN KEY(MovieID)
+REFERENCES Movie(URLID);
+
+-- Foreign Key Movie_Review MovieID that points to the URLID of the Movie table
+ALTER TABLE Movie_Review
+ADD CONSTRAINT movie_review_fk FOREIGN KEY (MovieID)
+REFERENCES Movie(URLID) ON DELETE CASCADE;
+
+-- TV Show Foreign Keys
+
+-- Foreign Key TV_Show_Genre TV_ShowID that points to the URLID of the TV_Show table
+ALTER TABLE TV_Show_Genre
+ADD CONSTRAINT tv_show_genre_tv_show_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID);
+
+-- Foreign Key TV_Show_Streaming TV_ShowID that points to the URLID of the TV_Show table
+ALTER TABLE TV_Show_Streaming
+ADD CONSTRAINT tv_show_streaming_tv_show_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID);
+
+-- Foreign Key TV_Show_Review TV_ShowID that points to the URLID of the TV_Show table
+ALTER TABLE TV_Show_Review
+ADD CONSTRAINT tv_show_review_fk FOREIGN KEY (TV_ShowID)
+REFERENCES TV_Show(URLID) ON DELETE CASCADE;
+
+-- Derived Attributes/Functions
+
+-- Example query to calculate the age of a director
+-- SELECT URLID, Age FROM Director_With_Age;
+
+-- View to calculate the Age derived attribute for each director
+CREATE VIEW Director_With_Age AS
+SELECT
+    D.*,
+    FLOOR(MONTHS_BETWEEN(SYSDATE, D.DateOfBirth) / 12) AS Age
+FROM
+    Director D;
+
+-- Example query to calculate the age of an actor
+-- SELECT URLID, Age FROM Actor_With_Age;
+
+-- View to calculate the Age derived attribute for each actor
+CREATE VIEW Actor_With_Age AS
+SELECT
+    A.*,
+    FLOOR(MONTHS_BETWEEN(SYSDATE, A.DateOfBirth) / 12) AS Age
+FROM
+    Actor A;
+
+-- Example query to calculate the age of a writer
+-- SELECT URLID, Age FROM Writer_With_Age;
+
+-- View to calculate the Age derived attribute for each writer
+CREATE VIEW Writer_With_Age AS
+SELECT
+    W.*,
+    FLOOR(MONTHS_BETWEEN(SYSDATE, W.DateOfBirth) / 12) AS Age
+FROM
+    Writer W;
+
+-- View to calculate the average review rating for Movies
+CREATE VIEW Movie_Average_Rating AS
+SELECT
+    M.URLID AS MovieID,
+    M.Title,
+    NVL(AVG(R.Rating), 0) AS AverageRating
+FROM
+    Movie M
+LEFT JOIN
+    Movie_Review R ON M.URLID = R.MovieID
+GROUP BY
+    M.URLID, M.Title;
+
+-- Example query to calculate the average review rating for Movies
+-- SELECT MovieID, AverageRating FROM Movie_Average_Rating;
+
+-- View to calculate the average review rating for TV shows
+CREATE VIEW TV_Show_Average_Rating AS
+SELECT
+    T.URLID AS TV_ShowID,
+    T.Title,
+    NVL(AVG(R.Rating), 0) AS AverageRating
+FROM
+    TV_Show T
+LEFT JOIN
+    TV_Show_Review R ON T.URLID = R.TV_ShowID
+GROUP BY
+    T.URLID, T.Title;
+
+-- Example query to calculate the average review rating for TV Shows
+-- SELECT TV_ShowID, AverageRating FROM TV_Show_Average_Rating;
+
+Oracle Inserts and Results:
+--------------------------------------------------------------------------
+-- Inserts for Actor
+INSERT INTO Actor (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('A000001', 'Zendaya', 'Coleman', 'Oakland, CA', TO_DATE('1996-09-01', 'YYYY-MM-DD'), 70, 'Not Married', 'Primetime Emmy Award', 'Zendaya (which means "to give thanks" in the language of Shona) is an American actress and singer born in Oakland, California. She began her career appearing as a child model working for Macys, Mervyns and Old Navy. She was a backup dancer before gaining prominence for her role as Rocky Blue on the Disney Channel sitcom Shake It Up (2010) which also includes Bella Thorne, Kenton Duty and Roshon Fegan. Zendaya was a contestant on the sixteenth season of the competition series Dancing with the Stars. She went on to produce and star as K.C. Cooper in the Disney Channel sitcom K.C. Undercover (2015) She made her film breakthrough in 2017, starring as Michelle "MJ" Jones in the Marvel Cinematic Universe superhero film Spider-Man: Homecoming (2017) and as Anne Wheeler in the musical drama film The Greatest Showman (2017) alongside actors such as Tom Holland, Hugh Jackman and Zac Efron. Besides acting, singing and dancing she is an ambassador for Convoy of Hope. She has written a book, launched her own clothing line (Daya by Zendaya) and proved herself to be a great role model for young girls all around the world.');
+
+INSERT INTO Actor (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('A000002', 'Timothee', 'Chalamet', 'New York, NY', TO_DATE('1995-12-27', 'YYYY-MM-DD'), 71, 'Not Married', 'Academy Award Nominee', 'Timothée Hal Chalamet was born in Manhattan, to Nicole Flender, a real estate broker and dancer, and Marc Chalamet, a UNICEF editor. His mother, who is from New York, is Jewish, and of Russian Jewish and Polish Jewish descent. His father, who is from Nîmes, France, is of French and English ancestry. He is the brother of actress Pauline Chalamet, a nephew of director Rodman Flender, and a grandson of screenwriter Harold Flender. He grew up in an artistic family, appearing in commercials and the New York theatre scene, and attending the LaGuardia High School of Music, Art and Performing Arts, where his classmate and friend was actor Ansel Elgort (the two later received their first Golden Globe nominations in the same year, 2017). For a time, Timothée also attended Columbia University. He made his film debut in 2014, as a high school student in Jason Reitmans Men, Women & Children (2014) and Matthew McConaugheys characters teenage son in Interstellar (2014). He subsequently had sizable roles in several indie films, playing the younger version of writer Stephen Elliott in The Adderall Diaries (2015), the male lead, Zac, in the drama One and Two (2015), and Billy in the road trip drama Miss Stevens (2016). On stage, he has appeared in the plays The Talls, by Anna Kerrigan, and John Patrick Shanleys autobiographical Prodigal Son, while on television, he has had a minor role in the film Loving Leah (2009), a big part in Law & Order (1990), and meatier roles on the shows Royal Pains (2009) and Homeland (2011), among other work. ');
+
+INSERT INTO Actor (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('A000003', 'Matt', 'Damon', 'Cambridge, MA', TO_DATE('1970-10-08', 'YYYY-MM-DD'), 70, 'Luciana Barroso', 'Academy Award for Best Screenplay', 'Matthew Paige Damon was born on October 8, 1970, in Boston, Massachusetts, to Kent Damon, a stockbroker, realtor and tax preparer, and Nancy Carlsson-Paige, an early childhood education professor at Lesley University. Matt has an older brother, Kyle, a sculptor. His father was of English and Scottish descent, and his mother is of Finnish and Swedish ancestry. The family lived in Newton until his parents divorced in 1973, when Damon and his brother moved with his mother to Cambridge. He grew up in a stable community, and was raised near actor Ben Affleck. Damon attended Cambridge Rindge and Latin School and he performed in a number of theater productions during his time there. He attended Harvard University as an English major. While in Harvard, he kept on skipping classes to pursue acting projects, which included the TNT original film, Rising Son (1990), and prep-school drama, School Ties (1992). It was until his film, Geronimo: An American Legend (1993), was expected to be a big success that he decided to drop out of university completely. Arriving in Hollywood, Matt managed to get his first break with a part in the romantic comedy, Mystic Pizza (1988). However, the film did not do too well and his film career failed to take off. Not letting failure discourage him from acting, he went for another audition, and managed to get a starring role in School Ties (1992). Up next for Matt was a role as a soldier who had problems with drug-addiction in the movie, Courage Under Fire (1996). ');
+
+INSERT INTO Actor (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('A000004', 'Cillian', 'Murphy', 'Douglas, Ireland', TO_DATE('1976-05-25', 'YYYY-MM-DD'), 71, 'Yvonne McGuinness', 'Irish Film and Television Award', 'Striking Irish actor Cillian Murphy was born in Douglas, Co Cork, the oldest child of Brendan Murphy, who works for the Irish Department of Education, and a mother who is a teacher of French. He has three younger siblings. Murphy was educated at Presentation Brothers College, Cork. He went on to study law at University College Cork, but dropped out after about a year. During this time, Murphy also pursued an interest in music, playing guitar in various bands. Upon leaving University, Murphy joined the Corcadorca Theater Company in Cork, and played the lead role in "Disco Pigs", amongst other plays. Various film roles followed, including a film adaptation of Disco Pigs (2001). However, his big film break came when he was cast in Danny Boyles 28 Days Later (2002), which became a surprise international hit. This performance earned him nominations for Best Newcomer at the Empire Awards and Breakthrough Male Performance at the MTV Movie Awards. Murphy went on to supporting roles in high-profile films such as Cold Mountain (2003) and Girl with a Pearl Earring (2003), and then was cast in two villain roles: Dr. Jonathan Crane, aka The Scarecrow, in Batman Begins (2005) and Jackson Rippner in Red Eye (2005). Although slight in nature for a villain, Murphys piercing blue eyes helped to create creepy performances and critics began to take notice. Manhola Dargis of the New York Times cited Murphy as a "picture-perfect villain", while David Denby of The New Yorker noted he was both "seductive" and "sinister". ');
+
+INSERT INTO Actor (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('A000005', 'Tom', 'Holland', 'Kingston upon Thames, England', TO_DATE('1996-06-01', 'YYYY-MM-DD'), 68, 'Not Married', 'BAFTA Rising Star Award', 'Thomas Stanley Holland was born in Kingston-upon-Thames, Surrey, to Nicola Elizabeth (Frost), a photographer, and Dominic Holland (Dominic Anthony Holland), who is a comedian and author. His paternal grandparents were from the Isle of Man and Ireland, respectively. He lives with his parents and three younger brothers - Paddy and twins Sam and Harry. Tom attended Donhead Prep School. Then, after a successful eleven plus exam, he became a pupil at Wimbledon College. Having successfully completed his GCSEs, in September 2012 Tom started a two-year course in the BRIT School for Performing Arts & Technology notable for its numerous famous alumni.Holland began dancing at a hip hop class at Nifty Feet Dance School in Wimbledon, London. His potential was spotted by choreographer Lynne Page (who was an Associate to Peter Darling, choreographer of Billy Elliot and Billy Elliot the Musical) when he performed with his dance school as part of the Richmond Dance Festival 2006. After eight auditions and subsequent two years of training, on 28 June 2008 Tom made his West End debut in Billy Elliot the Musical as Michael, Billys best friend. He gave his first performance in the title role of Billy on 8 September 2008 getting rave reviews praising his versatile acting and dancing skills.In September 2008 Tom (together with co-star Tanner Pflueger) appeared on the news programme on channel FIVE and gave his first TV interview. ');
+----------------------------------------------------------
+-- Inserts for Movie
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Dune: Part One', TO_DATE('2021-10-22', 'YYYY-MM-DD'), 155.0, 'Paul Atreides arrives on Arrakis after his father accepts the stewardship of the dangerous planet. However, chaos ensues after a betrayal as forces clash to control melange, a precious resource.', 'PG-13', 'M000001');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Dune: Part Two', TO_DATE('2023-11-03', 'YYYY-MM-DD'), 165.0, 'Paul Atreides unites with the Fremen while on a warpath of revenge against the conspirators who destroyed his family. Facing a choice between the love of his life and the fate of the universe, he endeavors to prevent a terrible future.', 'PG-13', 'M000002');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Challengers', TO_DATE('2024-08-11', 'YYYY-MM-DD'), 120.0, 'Tashi, a former tennis prodigy turned coach, transformed her husband into a champion. But to overcome a recent losing streak and redeem himself, hell need to face off against his former best friend and Tashis ex-boyfriend.', 'R', 'M000003');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Interstellar', TO_DATE('2014-11-07', 'YYYY-MM-DD'), 169.0, 'When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft, along with a team of researchers, to find a new planet for humans.', 'PG-13', 'M000004');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Oppenheimer', TO_DATE('2023-07-21', 'YYYY-MM-DD'), 180.0, 'A dramatization of the life story of J. Robert Oppenheimer, the physicist who had a large hand in the development of the atomic bombs that brought an end to World War II.', 'R', 'M000005');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Saving Private Ryan', TO_DATE('1998-07-24', 'YYYY-MM-DD'), 169.0, 'Following the Normandy Landings, a group of U.S. soldiers go behind enemy lines to retrieve a paratrooper whose brothers have been killed in action.', 'R', 'M000006');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Dunkirk', TO_DATE('2017-07-21', 'YYYY-MM-DD'), 106.0, 'Allied soldiers from Belgium, the British Commonwealth and Empire, and France are surrounded by the German Army and evacuated during a fierce battle in World War II.', 'PG-13', 'M000007');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('In the Heart of the Sea', TO_DATE('2015-12-11', 'YYYY-MM-DD'), 121.0, 'A recounting of a New England whaling ships sinking by a giant whale in 1820, an experience that later inspired the great novel Moby-Dick.', 'PG-13', 'M000008');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Spider-Man: Homecoming', TO_DATE('2017-07-07', 'YYYY-MM-DD'), 133.0, 'Peter Parker tries to stop Adrian The Vulture Toomes from selling weapons made with advanced Chitauri technology while trying to balance his life as an ordinary high school student.', 'PG-13', 'M000009');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Captain America: Civil War', TO_DATE('2016-05-06', 'YYYY-MM-DD'), 147.0, 'Political involvement in the Avengers affairs causes a rift between Captain America and Iron Man.', 'PG-13', 'M000010');
+INSERT INTO Movie (Title, ReleaseDate, RunTime, Description, AgeRating, URLID)
+VALUES ('Uncharted', TO_DATE('2022-02-18', 'YYYY-MM-DD'), 116.0, 'Street-smart Nathan Drake is recruited by seasoned treasure hunter Victor "Sully" Sullivan to recover a fortune amassed by Ferdinand Magellan, and lost 500 years ago by the House of Moncada.', 'PG-13', 'M000011');
+------------------------------------------------------------
+-- Inserts for TV Show
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Euphoria', TO_DATE('2019-06-16', 'YYYY-MM-DD'), 'Rue Bennett is a drug addict fresh from rehab, whos struggling to stay clean and make sense of her future. Her life changes drastically when she meets Jules Vaughn, a trans girl who recently moved to town following her parents divorce.', 'TV-MA', 'T000001');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Shake It Up', TO_DATE('2010-11-07', 'YYYY-MM-DD'), 'Two Chicago teens attempt to realize their dream of becoming professional dancers by landing spots on a popular local show.', 'TV-G', 'T000002');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('KC Undercover', TO_DATE('2015-01-18', 'YYYY-MM-DD'), 'An outspoken and confident technology wiz and skilled black belt discovers that both her parents are spies and expect her to follow in their footsteps.', 'TV-Y7', 'T000003');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Intergalactic', TO_DATE('2021-04-30', 'YYYY-MM-DD'), 'It follows a crew of fierce female convicts who break free and go on the run.', 'TV-MA', 'T000004');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('A Man Named Scott', TO_DATE('2021-11-05', 'YYYY-MM-DD'), 'A day in the life of a man behind an heroic mask.', 'TV-14', 'T000005');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Will & Grace', TO_DATE('1998-09-21', 'YYYY-MM-DD'), 'Gay lawyer Will and straight interior designer Grace share a New York City apartment. Their best friends are gleeful and proud gay Jack and charismatic, filthy-rich, amoral socialite Karen.', 'TV-14', 'T000006');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Project Green Light', TO_DATE('2001-12-02', 'YYYY-MM-DD'), 'The second season of Matt Damon and Ben Afflecks movie making reality series goes a different route when its two professionals realizing their vision on screen instead of just one: writer and director.', 'TV-PG', 'T000007');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Years of Living Dangerously', TO_DATE('2014-04-13', 'YYYY-MM-DD'), 'The Eames House and Studio is explored via a series of slides.', 'TV-PG', 'T000008');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Peaky Blinders', TO_DATE('2013-09-12', 'YYYY-MM-DD'), 'A gangster family epic set in 1900s England, centering on a gang who sew razor blades in the peaks of their caps, and their fierce boss Tommy Shelby.', 'TV-MA', 'T000009');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('A World of Calm', TO_DATE('2020-10-01', 'YYYY-MM-DD'), 'An immersive visual journey into another world.', 'TV-PG', 'T000010');
+INSERT INTO TV_Show (Title, ReleaseDate, Description, AgeRating, URLID)
+VALUES ('Atlantic: The Wildest Ocean on Earth', TO_DATE('2015-07-30', 'YYYY-MM-DD'), 'In this landmark series, the BBC Natural History Unit explores a vast ocean that stretches nearly 10,000 miles, from Arctic to Antarctic and from sun-drenched tropical reefs to crushing abyssal depths.', 'TV-PG', 'T000011');
+
+------------------------------------------------------------
+-- Inserts for Actor_Movie relationships
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000001', 'M000001');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000001', 'M000002');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000001', 'M000003');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000001', 'M000009');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000002', 'M000001');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000002', 'M000002');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000002', 'M000004');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000003', 'M000004');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000003', 'M000005');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000003', 'M000006');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000004', 'M000005');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000004', 'M000007');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000004', 'M000008');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000005', 'M000008');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000005', 'M000009');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000005', 'M000010');
+INSERT INTO Actor_Movie (ActorID, MovieID)
+VALUES ('A000005', 'M000011');
+
+------------------------------------------------------------
+-- Inserts for Actor_TV_Show relationships
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000001', 'T000001');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000001', 'T000002');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000001', 'T000003');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000002', 'T000004');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000002', 'T000005');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000003', 'T000006');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000003', 'T000007');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000003', 'T000008');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000004', 'T000009');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000004', 'T000010');
+INSERT INTO Actor_TV_Show (ActorID, TV_ShowID)
+VALUES ('A000004', 'T000011');
+
+------------------------------------------------------------
+-- Inserts for Actor Parents
+-- Zendaya
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000001', 'Claire Stoermer');
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000001', 'Kazembe Ajamu Coleman');
+
+-- Timothée Chalamet
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000002', 'Nicole Flender');
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000002', 'Marc Chalamet');
+
+-- Matt Damon
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000003', 'Kent Damon');
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000003', 'Nancy Carlsson-Paige');
+
+-- Cillian Murphy
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000004', 'Brendan Murphy');
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000004', 'Jane Murphy');
+
+-- Tom Holland
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000005', 'Dominic Holland');
+INSERT INTO Actor_Parents (ActorID, Parent)
+VALUES ('A000005', 'Nicola Frost');
+
+------------------------------------------------------------
+-- Inserts for Actor Media
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000001', 'Zendaya Interview on Dune');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000001', 'Zendaya Feature on Euphoria');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000001', 'Zendaya Documentary');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000002', 'Timothée Chalamet Interview on Dune');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000002', 'Timothée Chalamet Feature on Interstellar');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000002', 'Timothée Chalamet Documentary');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000003', 'Matt Damon Interview on Interstellar');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000003', 'Matt Damon Feature on Oppenheimer');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000003', 'Matt Damon Documentary');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000004', 'Cillian Murphy Interview on Oppenheimer');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000004', 'Cillian Murphy Feature on Peaky Blinders');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000004', 'Cillian Murphy Documentary');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000005', 'Tom Holland Interview on Spider-Man: Homecoming');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000005', 'Tom Holland Feature on Uncharted');
+INSERT INTO Actor_Media (ActorID, Media)
+VALUES ('A000005', 'Tom Holland Documentary');
+
+------------------------------------------------------------
+-- Inserts for Actor Children
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000001', 'No Information Available');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000002', 'No Information Available');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000003', 'Isabella Damon');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000003', 'Gia Zavala Damon');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000003', 'Stella Damon');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000004', 'Malachy Murphy');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000004', 'Aran Murphy');
+INSERT INTO Actor_Children (ActorID, Child)
+VALUES ('A000005', 'No Information Available');
+------------------------------------------------------------
+-- Inserts for Writer
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000001', 'Frank', 'Herbert', 'Tacoma, WA', TO_DATE('1920-10-08', 'YYYY-MM-DD'), 70, 'Beverly Ann Stuart', 'Hugo Award', 'Frank Herbert was born on October 8, 1920 in Tacoma, Washington, USA. He was a writer, known for Dune: Part One (2021), Dune (1984) and Dune: Part Two (2024). He was married to Theresa Shackleford, Beverley Ann Stuart and Flora Parkinson. He died on February 11, 1986 in Madison, Wisconsin, USA.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000002', 'Sam', 'Levinson', 'United States', TO_DATE('1985-01-08', 'YYYY-MM-DD'), 72, 'Ashley Lent Levinson', 'Primetime Emmy Award', 'Sam Levinson was born on January 8, 1985 in the USA. He is a writer and producer, known for Euphoria (2019), The Idol (2023) and Assassination Nation (2018).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000003', 'Jonathan', 'Nolan', 'London, England', TO_DATE('1976-06-06', 'YYYY-MM-DD'), 71, 'Lisa Joy', 'Academy Award Nominee', 'Attended Loyola Academy in Wilmette, Illinois, graduating in 1994. Graduated from Georgetown University in Washington, D.C. in 1999. Majored in English. Shortly after graduating from Georgetown University, Jonathan Nolan served as a production assistant on Memento (2000). Wrote the short story, "Memento Mori", on which the film Memento (2000) is based. Was co-writer, with his brother Christopher Nolan, on The Prestige (2006), The Dark Knight (2008) and The Dark Knight Rises (2012). Also co-wrote the Terminator Salvation (2009).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000004', 'George', 'Kay', 'London, England', TO_DATE('1975-03-15', 'YYYY-MM-DD'), 69, 'Not Married', 'BAFTA Award', 'George Kay is known for Lupin (2021), Criminal: UK (2019) and Stag (2016).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000005', 'Robert', 'Alexander', 'Los Angeles, CA', TO_DATE('1980-08-12', 'YYYY-MM-DD'), 70, 'Not Married', 'Peabody Award', 'Robert passed away 11.04.2018. Alexander Robert Graham 05.01.1942 - 11.04.2018 Actor. Late of Glebe. Son of Bob and Jean Alexander (both deceased), brother of Ann, uncle of Sarah and Matt. Adored partner (for 54 years) of Barry Blight; esteemed actor; accomplished musician; kind mentor to emerging young actors; cherished colleague; intelligent, generous, witty and convivial host to a multitude of fortunate friends. Robert passed peacefully away at the Sacred Heart Hospice on Wednesday evening after a lengthy illness.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000006', 'Christopher', 'Nolan', 'London, England', TO_DATE('1970-07-30', 'YYYY-MM-DD'), 71, 'Emma Thomas', 'Academy Award Nominee', 'Best known for his cerebral, often nonlinear, storytelling, acclaimed Academy Award winner writer/director/producer Sir Christopher Nolan CBE was born in London, England. Over the course of more than 25 years of filmmaking, Nolan has gone from low-budget independent films to working on some of the biggest blockbusters ever made and became one of the most celebrated filmmakers of modern cinema. At 7 years old, Nolan began making short films with his fathers Super-8 camera. While studying English Literature at University College London, he shot 16-millimeter films at U.C.L.s film society, where he learned the guerrilla techniques he would later use to make his first feature, Following (1998), on a budget of around $6,000. The noir thriller was recognized at a number of international film festivals prior to its theatrical release and gained Nolan enough credibility that he was able to gather substantial financing for his next film. Nolans second film was Memento (2000), which he directed from his own screenplay based on a short story by his brother Jonathan Nolan. Starring Guy Pearce, the film brought Nolan numerous honors, including Academy Award and Golden Globe Award nominations for Best Original Screenplay. Nolan went on to direct the critically acclaimed psychological thriller, Insomnia (2002), starring Al Pacino, Robin Williams and Hilary Swank. ');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000007', 'Robert', 'Rodat', 'Keene, NH', TO_DATE('1953-05-15', 'YYYY-MM-DD'), 70, 'Not Married', 'Academy Award Nominee', 'Robert Rodat was born in 1953 in New Hampshire, USA. He is a writer and producer, known for Saving Private Ryan (1998), Falling Skies (2011) and Fly Away Home (1996). He is married to Mollie Miller. They have three children.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000008', 'Max', 'Mutchnick', 'Chicago, IL', TO_DATE('1965-11-11', 'YYYY-MM-DD'), 69, 'Not Married', 'Primetime Emmy Award', 'Max Mutchnick is Creator/Executive Producer of "Will & Grace", "Good Morning, Miami" and Executive Producer, "The Stones". For his work on "Will & Grace," he has been honored with an Emmy Award for Outstanding Comedy Series; a Peoples Choice Award (Favorite New Comedy); four Golden Globe nominations (Best Comedy Series); four GLAAD Media Awards (Outstanding TV Comedy Series); a Founders Award from the Viewers for Quality Television, and the National Award for Excellence from the Human Rights Campaign. Creative partners Mutchnick and David Kohan began their careers writing together for "The Dennis Miller Show" and from there ventured forward into comedy series. Producers Linda Bloodworth and Harry Thomason gave the future "Will & Grace" Emmy Award winners their first break into the world of sitcoms when they hired them to work on "Hearts Afire" and "Evening Shade." Their other television credits include "Good Advice" with Shelley Long and the acclaimed "Dream On." In addition to "Will & Grace", they also created and served as executive producers on the comedy series "Boston Common" and "Good Morning, Miami." Currently, David and Max serve as Executive Producers on the new CBS comedy, "The Stones." ');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000009', 'Alex', 'Orlovsky', 'New York, NY', TO_DATE('1978-03-22', 'YYYY-MM-DD'), 70, 'Not Married', 'Peabody Award', 'Writer of Project Green Light.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000010', 'Joel', 'Bach', 'Los Angeles, CA', TO_DATE('1975-06-15', 'YYYY-MM-DD'), 71, 'Not Married', 'Peabody Award', 'Joel Bach is known for Years of Living Dangerously (2014), 60 Minutes (1968) and X Marks the Spot (2020).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000011', 'Charles', 'Leavitt', 'Los Angeles, CA', TO_DATE('1963-04-10', 'YYYY-MM-DD'), 70, 'Not Married', 'Academy Award Nominee', 'Charles Leavitt was born in Pittsburgh, Pennsylvania, USA. He is known for Blood Diamond (2006), Warcraft (2016) and Those Who Wish Me Dead (2021).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000012', 'Steven', 'Knight', 'Birmingham, England', TO_DATE('1959-08-05', 'YYYY-MM-DD'), 71, 'Not Married', 'BAFTA Award', 'Steven Knight is a British screenwriter and film director. He is best known for screenplays he wrote for the films Dirty Pretty Things (2002) and Eastern Promises (2007), and also directed as well as written the film Locke (2013). Knight is also one of three creators of Who Wants to Be a Millionaire?, a game show that has been remade and aired in around 160 countries worldwide, and has written for BBCs Commercial Breakdown, The Detectives , Peaky Blinders and Taboo. Others films based on screenplays that Knight has written include The Hundred-Foot Journey and Pawn Sacrifice both in 2014.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000013', 'Jane', 'Root', 'London, England', TO_DATE('1960-02-12', 'YYYY-MM-DD'), 69, 'Not Married', 'Peabody Award', 'Jane Root is a leading creative executive with a reputation for innovation, determination and delivery. Her work was celebrated by Women in Film & TV when she was awarded the prestigious 2017 Business Award acknowledging her outstanding achievements in the industry both in the UK and abroad. In 2008, Jane created Nutopia, a TV production company based in London and Washington committed to thinking big and focused on ambitious factual series of all types, as well as factually-inspired drama. Nutopia is dedicated to creating ground-breaking, specialist factual content on a global scale. Best known for pioneering a new genre of television - the megadoc - by combining epic cinematography and action-driven drama with high-end documentary and A-list talent. Recent credits include highly praised series The World According to Jeff Goldblum (Disney+), award-winning earth science series One Strange Rock (Nat Geo), critically acclaimed drama doc The Last Czars (Netflix), and Grierson-nominated feature doc The Hunt for Jihadi John (HBO/Channel 4). The company continues to development shows for the biggest broadcasters in the world, alongside some of the highest profile partners in the industry. Jane was President of Discovery Channel US until 2007 where she re-positioned the channel giving it a fresh voice and leading to record ratings. During her time at Discovery, Jane commissioned international hits including Man vs Wild (Born Survivor), Deadliest Catch and Dirty Jobs, as well as turning Planet Earth into a worldwide phenomenon. Before her US adventure, Jane was Controller of BBC2 for 5 years.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000014', 'Huw', 'Cordey', 'Cardiff, Wales', TO_DATE('1970-03-15', 'YYYY-MM-DD'), 70, 'Not Married', 'Peabody Award', 'Huw Cordey is known for Dancing with the Birds (2019), Our Planet (2019) and Secret Lives of Orangutans (2024).');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000015', 'Jonathan', 'Goldstein', 'New York, NY', TO_DATE('1969-09-02', 'YYYY-MM-DD'), 71, 'Not Married', 'Academy Award Nominee', 'Jonathan Goldstein was born on September 2, 1968 in New York City, New York, USA. He is a director and writer, known for Spider-Man: Homecoming (2017), Horrible Bosses (2011) and Game Night (2018). He has been married to Adena Halpern since August 26, 2007. They have one child.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000016', 'Christopher', 'Markus', 'Buffalo, NY', TO_DATE('1970-01-02', 'YYYY-MM-DD'), 70, 'Not Married', 'Academy Award Nominee', 'Christopher Markus was born on October 16, 1969 in Buffalo, New York, USA. He is a writer and producer, known for Avengers: Endgame (2019), Avengers: Infinity War (2018) and Captain America: The First Avenger (2011). He has been married to Claire Saunders since October 22, 2011.');
+
+INSERT INTO Writer (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('W000018', 'Rafe', 'Judkins', 'Salt Lake City, UT', TO_DATE('1983-01-08', 'YYYY-MM-DD'), 72, 'Not Married', 'Peabody Award', 'Rafe Judkins was born on January 8, 1983 in Salt Lake City, Utah, USA. He is a producer and writer, known for The Wheel of Time (2021), Uncharted (2022) and Agents of S.H.I.E.L.D. (2013).');
+
+------------------------------------------------------------
+-- Inserts for Writer Parents
+-- Frank Herbert
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000001', 'Frank Patrick Herbert');
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000001', 'Eileen Herbert');
+
+-- Sam Levinson
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000002', 'Barry Levinson');
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000002', 'Diana Rhodes');
+
+-- Jonathan Nolan
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000003', 'Brendan James Nolan');
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000003', 'Christina Nolan');
+
+-- George Kay
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000004', 'No Information Available');
+
+-- Robert Alexander
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000005', 'No Information Available');
+
+-- Christopher Nolan
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000006', 'Brendan James Nolan');
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000006', 'Christina Nolan');
+
+-- Robert Rodat
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000007', 'No Information Available');
+
+-- Max Mutchnick
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000008', 'No Information Available');
+
+-- Alex Orlovsky
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000009', 'No Information Available');
+
+-- Joel Bach
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000010', 'No Information Available');
+
+-- Charles Leavitt
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000011', 'No Information Available');
+
+-- Steven Knight
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000012', 'No Information Available');
+
+-- Jane Root
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000013', 'No Information Available');
+
+-- Huw Cordey
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000014', 'No Information Available');
+
+-- Jonathan Goldstein
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000015', 'No Information Available');
+
+-- Christopher Markus
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000016', 'No Information Available');
+
+-- Rafe Judkins
+INSERT INTO Writer_Parents (WriterID, Parent)
+VALUES ('W000018', 'No Information Available');
+
+------------------------------------------------------------
+-- Inserts for Writer Media
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000001', 'Frank Herbert Biography');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000001', 'Dune Documentary Featuring Frank Herbert');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000002', 'Sam Levinson Interview on Euphoria');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000003', 'Jonathan Nolan Interview on Interstellar');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000004', 'George Kay Feature on Intergalactic');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000005', 'Robert Alexander Documentary on A Man Named Scott');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000006', 'Christopher Nolan Interview on Oppenheimer');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000007', 'Robert Rodat Feature on Saving Private Ryan');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000008', 'Max Mutchnick Interview on Will & Grace');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000009', 'Alex Orlovsky Feature on Project Green Light');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000010', 'Joel Bach Documentary on Years of Living Dangerously');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000011', 'Charles Leavitt Feature on Heart of the Sea');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000012', 'Steven Knight Documentary on Peaky Blinders');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000013', 'Jane Root Feature on A World of Calm');
+INSERT INTO Writer_Media (WriterID, Media)
+VALUES ('W000014', 'Huw Cordey Documentary on Atlantic: The Wildest Ocean on Earth');
+
+------------------------------------------------------------
+-- Inserts for Writer Children
+-- Frank Herbert
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000001', 'Brian Herbert');
+
+-- Sam Levinson
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000002', 'No Information Available');
+
+-- Jonathan Nolan
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000003', 'No Information Available');
+
+-- George Kay
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000004', 'No Information Available');
+
+-- Robert Alexander
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000005', 'No Information Available');
+
+-- Christopher Nolan
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000006', 'Rory Nolan');
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000006', 'Magnus Nolan');
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000006', 'Oliver Nolan');
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000006', 'Flora Nolan');
+
+-- Robert Rodat
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000007', 'No Information Available');
+
+-- Max Mutchnick
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000008', 'No Information Available');
+
+-- Alex Orlovsky
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000009', 'No Information Available');
+
+-- Joel Bach
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000010', 'No Information Available');
+
+-- Charles Leavitt
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000011', 'No Information Available');
+
+-- Steven Knight
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000012', 'No Information Available');
+
+-- Jane Root
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000013', 'No Information Available');
+
+-- Huw Cordey
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000014', 'No Information Available');
+
+-- Jonathan Goldstein
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000015', 'No Information Available');
+
+-- Christopher Markus
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000016', 'No Information Available');
+
+-- Rafe Judkins
+INSERT INTO Writer_Children (WriterID, Child)
+VALUES ('W000018', 'No Information Available');
+
+-------------------------------------------------------------
+-- Writer_Movie relationships
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000001', 'M000001');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000001', 'M000002');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000003', 'M000004');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000006', 'M000004');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000007', 'M000006');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000015', 'M000009');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000016', 'M000010');
+INSERT INTO Writer_Movie (WriterID, MovieID)
+VALUES ('W000018', 'M000011');
+
+-------------------------------------------------------------------
+-- Writer_TV_Show relationships
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000002', 'T000001');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000004', 'T000004');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000008', 'T000006');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000009', 'T000007');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000010', 'T000008');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000012', 'T000009');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000013', 'T000010');
+INSERT INTO Writer_TV_Show (WriterID, TV_ShowID)
+VALUES ('W000014', 'T000011');
+
+------------------------------------------------------------
+-- Inserts for Director
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000001', 'Denis', 'Villeneuve', 'Gentilly, Quebec, Canada', TO_DATE('1967-10-03', 'YYYY-MM-DD'), 72, 'Tanya Lapointe', 'Academy Award Nominee', 'Denis Villeneuve is a French-Canadian film director and writer. He was born in 1967, in Trois-Rivières, Québec, Canada. He started his career as a filmmaker at the National Film Board of Canada. He is best known for his feature films Arrival (2016), Sicario (2015), Prisoners (2013), Enemy (2013), and Incendies (2010). He is married to Tanya Lapointe.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000002', 'Sam', 'Levinson', 'United States', TO_DATE('1985-01-08', 'YYYY-MM-DD'), 72, 'Ashley Lent Levinson', 'Primetime Emmy Award', 'Sam Levinson was born on January 8, 1985 in the USA. He is a writer and producer, known for Euphoria (2019), The Idol (2023) and Assassination Nation (2018).');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000003', 'Christopher', 'Nolan', 'London, England', TO_DATE('1970-07-30', 'YYYY-MM-DD'), 71, 'Emma Thomas', 'Academy Award Nominee', 'Best known for his cerebral, often nonlinear, storytelling, acclaimed Academy Award winner writer/director/producer Sir Christopher Nolan CBE was born in London, England. Over the course of more than 25 years of filmmaking, Nolan has gone from low-budget independent films to working on some of the biggest blockbusters ever made and became one of the most celebrated filmmakers of modern cinema. At 7 years old, Nolan began making short films with his fathers Super-8 camera. While studying English Literature at University College London, he shot 16-millimeter films at U.C.L.s film society, where he learned the guerrilla techniques he would later use to make his first feature, Following (1998), on a budget of around $6,000. The noir thriller was recognized at a number of international film festivals prior to its theatrical release and gained Nolan enough credibility that he was able to gather substantial financing for his next film. ');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000004', 'Kieron', 'Hawkes', 'London, England', TO_DATE('1980-05-20', 'YYYY-MM-DD'), 70, 'Not Married', 'BAFTA Award', 'Kieron Hawkes is known for Red Eye (2024), Fortitude (2015) and The Burning Girls (2023).');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000005', 'Robert', 'Alexander', 'Los Angeles, CA', TO_DATE('1980-08-12', 'YYYY-MM-DD'), 70, 'Not Married', 'Peabody Award', 'Robert passed away 11.04.2018. Alexander Robert Graham 05.01.1942 - 11.04.2018 Actor. Late of Glebe. Son of Bob and Jean Alexander (both deceased), brother of Ann, uncle of Sarah and Matt. Adored partner (for 54 years) of Barry Blight; esteemed actor; accomplished musician; kind mentor to emerging young actors; cherished colleague; intelligent, generous, witty and convivial host to a multitude of fortunate friends.Robert passed peacefully away at the Sacred Heart Hospice on Wednesday evening after a lengthy illness.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000006', 'Steven', 'Spielberg', 'Cincinnati, OH', TO_DATE('1946-12-18', 'YYYY-MM-DD'), 71, 'Kate Capshaw', 'Academy Award Winner', 'One of the most influential personalities in the history of cinema, Steven Spielberg is Hollywoods best known director and one of the wealthiest filmmakers in the world. He has an extraordinary number of commercially successful and critically acclaimed credits to his name, either as a director, producer or writer since launching the summer blockbuster with Jaws (1975), and he has done more to define popular film-making since the mid-1970s than anyone else. Steven Allan Spielberg was born in 1946 in Cincinnati, Ohio, to Leah Frances (Posner), a concert pianist and restaurateur, and Arnold Spielberg, an electrical engineer who worked in computer development. His parents were both born to Russian Jewish immigrant families. Steven spent his younger years in Haddon Township, New Jersey, Phoenix, Arizona, and later Saratoga, California. He went to California State University Long Beach, but dropped out to pursue his entertainment career. Among his early directing efforts were Battle Squad (1961), which combined World War II footage with footage of an airplane on the ground that he makes you believe is moving. ');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000007', 'James', 'Burrows', 'Los Angeles, CA', TO_DATE('1940-12-30', 'YYYY-MM-DD'), 70, 'Debbie Burrows', 'Primetime Emmy Award', 'James Burrows was born on December 30, 1940 in Los Angeles, California, USA. He is a director and producer, known for Cheers (1982), Will & Grace (1998) and Taxi (1978). He has been married to Debbie Easton since 1997. He was previously married to Linda Solomon.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000008', 'Ben', 'Affleck', 'Berkeley, CA', TO_DATE('1972-08-15', 'YYYY-MM-DD'), 72, 'Jennifer Lopez', 'Academy Award Winner', 'Benjamin Géza "Ben" Affleck-Boldt was born on August 15, 1972 in Berkeley, California and raised in Cambridge, Massachusetts, to mother Chris Anne (Boldt), a school teacher, and father Timothy Byers "Tim" Affleck, a social worker. Ben has a younger brother, actor Casey Affleck, who was born in 1975. He is of mostly English, Irish, German, and Scottish ancestry. His middle name, Géza, is after a Hungarian family friend who was a Holocaust survivor. Affleck wanted to be an actor ever since he could remember, and his first acting experience was for a Burger King commercial, when he was on the PBS mini-series, The Voyage of the Mimi (1984). It was also at that age when Ben met his lifelong friend and fellow actor, Matt Damon. They played little league together and took drama classes together. Bens teen years consisted of mainly TV movies and small television appearances including Hands of a Stranger (1987) and The Second Voyage of the Mimi (1988). He made his big introduction into feature films in 1993 when he was cast in Dazed and Confused (1993). After that, he did mostly independent films like Kevin Smiths Mallrats (1995) and Chasing Amy (1997) which were great for Bens career, receiving renowned appreciation for his works at the Sundance film festival.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000009', 'Joel', 'Bach', 'Los Angeles, CA', TO_DATE('1975-06-15', 'YYYY-MM-DD'), 71, 'Not Married', 'Peabody Award', 'Joel Bach is known for Years of Living Dangerously (2014), 60 Minutes (1968) and X Marks the Spot (2020).');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000011', 'Ron', 'Howard', 'Duncan, OK', TO_DATE('1954-03-01', 'YYYY-MM-DD'), 70, 'Cheryl Howard', 'Academy Award Winner', 'Academy Award-winning filmmaker Ron Howard is one of this generations most popular directors. From the critically acclaimed dramas A Beautiful Mind (2001) and Apollo 13 (1995) to the hit comedies Parenthood (1989) and Splash (1984), he has created some of Hollywoods most memorable films. Howard made his directorial debut in 1978 with the comedy Grand Theft Auto (1977). He began his career in film as an actor. He first appeared in The Journey (1959) and The Music Man (1962), then as Opie on the long-running television series The Andy Griffith Show (1960). Howard later starred in the popular series Happy Days (1974) and drew favorable reviews for his performances in American Graffiti (1973) and The Shootist (1976). Howard and long-time producing partner Brian Grazer first collaborated on the hit comedies "Night Shift" and "Splash." The pair co-founded Imagine Entertainment in 1986 to create independently produced feature films. Howards portfolio includes some of the most popular films of the past 20 years. In 1991, Howard created the acclaimed drama "Backdraft", starring Robert De Niro, Kurt Russell and William Baldwin. He followed it with the historical epic Far and Away (1992), starring Tom Cruise and Nicole Kidman. Howard directed Mel Gibson, Rene Russo, Gary Sinise and Delroy Lindo in the 1996 suspense thriller Ransom (1996). ');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000012', 'Otto', 'Bathurst', 'London, England', TO_DATE('1971-06-18', 'YYYY-MM-DD'), 71, 'Not Married', 'BAFTA Award', 'Otto Bathurst was born in June 1971 in Hammersmith, London, England, UK. He is a director and producer, known for Robin Hood (2018), Peaky Blinders (2013) and Black Mirror (2011).');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000013', 'Jane', 'Root', 'London, England', TO_DATE('1960-02-12', 'YYYY-MM-DD'), 69, 'Not Married', 'Peabody Award', 'Jane Root is a leading creative executive with a reputation for innovation, determination and delivery. Her work was celebrated by Women in Film & TV when she was awarded the prestigious 2017 Business Award acknowledging her outstanding achievements in the industry both in the UK and abroad. In 2008, Jane created Nutopia, a TV production company based in London and Washington committed to thinking big and focused on ambitious factual series of all types, as well as factually-inspired drama. Nutopia is dedicated to creating ground-breaking, specialist factual content on a global scale. Best known for pioneering a new genre of television - the megadoc - by combining epic cinematography and action-driven drama with high-end documentary and A-list talent. Recent credits include highly praised series The World According to Jeff Goldblum (Disney+), award-winning earth science series One Strange Rock (Nat Geo), critically acclaimed drama doc The Last Czars (Netflix), and Grierson-nominated feature doc The Hunt for Jihadi John (HBO/Channel 4). The company continues to development shows for the biggest broadcasters in the world, alongside some of the highest profile partners in the industry. Jane was President of Discovery Channel US until 2007 where she re-positioned the channel giving it a fresh voice and leading to record ratings. During her time at Discovery, Jane commissioned international hits including Man vs Wild (Born Survivor), Deadliest Catch and Dirty Jobs, as well as turning Planet Earth into a worldwide phenomenon. Before her US adventure, Jane was Controller of BBC2 for 5 years.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000014', 'Huw', 'Cordey', 'Cardiff, Wales', TO_DATE('1970-03-15', 'YYYY-MM-DD'), 70, 'Not Married', 'Peabody Award', 'Huw Cordey is known for Dancing with the Birds (2019), Our Planet (2019) and Secret Lives of Orangutans (2024).');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000015', 'Jon', 'Watts', 'Fountain, CO', TO_DATE('1981-06-28', 'YYYY-MM-DD'), 71, 'Not Married', 'Academy Award Nominee', 'Jon Watts is an American filmmaker and screenwriter. He directed Cop Car and Clown before he was picked by Marvel and Sony to direct Spider-Man: Homecoming starring Tom Holland and Zendaya. Its success resulted in two sequels, Far from Home in 2019 and No Way Home in 2021. He was also picked by Marvel to direct a Fantastic Four reboot film following the failure of Josh Tranks Fant4stic, but dropped the directing role in April 2022.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000016', 'Anthony', 'Russo', 'Cleveland, OH', TO_DATE('1970-02-03', 'YYYY-MM-DD'), 70, 'Not Married', 'Academy Award Nominee', 'Anthony J. Russo is an American filmmaker and producer who works alongside his brother Joseph Russo. They have directed You, Me and Dupree, Cherry and the Marvel films Captain America: The Winter Soldier, Captain America: Civil War, Avengers: Infinity War and Avengers: Endgame. Endgame is one of the highest grossing films of all time.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000017', 'Joe', 'Russo', 'Cleveland, OH', TO_DATE('1971-07-18', 'YYYY-MM-DD'), 70, 'Not Married', 'Academy Award Nominee', 'Joseph Vincent Russo is an American filmmaker and producer who works alongside his brother Anthony Russo. They have directed You, Me and Dupree, Cherry and the Marvel films Captain America: The Winter Soldier, Captain America: Civil War, Avengers: Infinity War and Avengers: Endgame. Endgame is one of the highest grossing films of all time.');
+
+INSERT INTO Director (URLID, FirstName, LastName, PlaceOfBirth, DateOfBirth, Height, Spouse, Award, Biography)
+VALUES ('D000018', 'Ruben', 'Fleischer', 'Washington, D.C.', TO_DATE('1974-10-31', 'YYYY-MM-DD'), 72, 'Not Married', 'Peabody Award', 'Ruben Fleischer was born on October 31, 1974 in Washington, District of Columbia, USA. He is a producer and director, known for Zombieland (2009), Gangster Squad (2013) and Venom (2018). He has been married to Holly Shakoor Fleischer since November 10, 2012.');
+------------------------------------------------------------
+-- Inserts for Director Parents
+-- Denis Villeneuve
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000001', 'No Information Available');
+
+-- Sam Levinson
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000002', 'Barry Levinson');
+
+-- Christopher Nolan
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000003', 'Brendan James Nolan');
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000003', 'Christina Nolan');
+
+-- Kieron Hawkes
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000004', 'No Information Available');
+
+-- Robert Alexander
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000005', 'No Information Available');
+
+-- Steven Spielberg
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000006', 'Arnold Spielberg');
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000006', 'Leah Adler');
+
+-- James Burrows
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000007', 'Abe Burrows');
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000007', 'Ruth Levinson');
+
+-- Ben Affleck
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000008', 'Timothy Byers Affleck');
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000008', 'Christine Anne Boldt');
+
+-- Joel Bach
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000009', 'No Information Available');
+
+-- Ron Howard
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000011', 'Rance Howard');
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000011', 'Jean Speegle Howard');
+
+-- Otto Bathurst
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000012', 'No Information Available');
+
+-- Jane Root
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000013', 'No Information Available');
+
+-- Huw Cordey
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000014', 'No Information Available');
+
+-- Jon Watts
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000015', 'No Information Available');
+
+-- Anthony Russo
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000016', 'No Information Available');
+
+-- Joe Russo
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000017', 'No Information Available');
+-- Ruben Fleischer
+INSERT INTO Director_Parents (DirectorID, Parent)
+VALUES ('D000018', 'No Information Available');
+
+------------------------------------------------------------
+-- Updates for Director Media
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000001', 'Denis Villeneuve Interview on Dune');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000001', 'Denis Villeneuve Feature on Dune Part 2');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000002', 'Sam Levinson Interview on Euphoria');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000003', 'Christopher Nolan Interview on Interstellar');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000003', 'Christopher Nolan Interview on Oppenheimer');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000004', 'Kieron Hawkes Feature on Intergalactic');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000005', 'Robert Alexander Documentary on A Man Named Scott');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000006', 'Steven Spielberg Feature on Saving Private Ryan');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000007', 'James Burrows Documentary on Will & Grace');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000008', 'Ben Affleck Feature on Project Green Light');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000009', 'Joel Bach Documentary on Years of Living Dangerously');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000011', 'Ron Howard Feature on Heart of the Sea');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000012', 'Otto Bathurst Documentary on Peaky Blinders');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000013', 'Jane Root Feature on A World of Calm');
+INSERT INTO Director_Media (DirectorID, Media)
+VALUES ('D000014', 'Huw Cordey Documentary on Atlantic: The Wildest Ocean on Earth');
+
+------------------------------------------------------------
+-- Inserts for Director Children
+
+-- Denis Villeneuve
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000001', 'No Information Available');
+-- Sam Levinson
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000002', 'No Information Available');
+
+-- Christopher Nolan
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000003', 'Rory Nolan');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000003', 'Magnus Nolan');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000003', 'Oliver Nolan');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000003', 'Flora Nolan');
+
+-- Kieron Hawkes
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000004', 'No Information Available');
+
+-- Robert Alexander
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000005', 'No Information Available');
+
+-- Steven Spielberg
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Max Spielberg');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Sasha Spielberg');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Theo Spielberg');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Mikaela Spielberg');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Destry Spielberg');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000006', 'Sawyer Spielberg');
+
+-- James Burrows
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000007', 'No Information Available');
+
+-- Ben Affleck
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000008', 'Violet Affleck');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000008', 'Seraphina Affleck');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000008', 'Samuel Affleck');
+
+-- Joel Bach
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000009', 'No Information Available');
+
+-- Ron Howard
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000011', 'Bryce Dallas Howard');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000011', 'Paige Howard');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000011', 'Jocelyn Howard');
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000011', 'Reed Howard');
+
+-- Otto Bathurst
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000012', 'No Information Available');
+
+-- Jane Root
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000013', 'No Information Available');
+
+-- Huw Cordey
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000014', 'No Information Available');
+
+-- Jon Watts
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000015', 'No Information Available');
+
+-- Anthony Russo
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000016', 'Julian Russo');
+
+-- Joe Russo
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000017', 'Sophia Russo');
+
+-- Ruben Fleischer
+INSERT INTO Director_Children (DirectorID, Child)
+VALUES ('D000018', 'No Information Available');
+
+------------------------------------------------------------
+-- Updates for Director_Movie relationships
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000001', 'M000001');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000001', 'M000002');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000003', 'M000004');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000003', 'M000005');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000006', 'M000006');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000003', 'M000007');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000011', 'M000008');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000015', 'M000009');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000016', 'M000010');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000017', 'M000010');
+INSERT INTO Director_Movie (DirectorID, MovieID)
+VALUES ('D000018', 'M000011');
+------------------------------------------------------------
+-- Director_TV_Show relationships (Block 1)
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000002', 'T000001');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000004', 'T000004');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000005', 'T000005');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000007', 'T000006');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000008', 'T000007');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000009', 'T000008');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000012', 'T000009');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000013', 'T000010');
+INSERT INTO Director_TV_Show (DirectorID, TV_ShowID)
+VALUES ('D000014', 'T000011');
+
+------------------------------------------------------------
+-- Inserts for Movie Genre
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000001', 'Sci-Fi');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000001', 'Adventure');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000002', 'Sci-Fi');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000002', 'Adventure');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000003', 'Drama');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000004', 'Sci-Fi');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000004', 'Drama');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000005', 'Biography');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000005', 'Drama');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000006', 'War');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000006', 'Drama');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000009', 'Action');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000009', 'Adventure');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000010', 'Action');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000010', 'Superhero');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000011', 'Adventure');
+INSERT INTO Movie_Genre (MovieID, Genre)
+VALUES ('M000011', 'Action');
+
+------------------------------------------------------------
+-- Inserts for Movie Streaming
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000001', 'HBO Max');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000001', 'Amazon Prime');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000002', 'HBO Max');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000002', 'Netflix');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000003', 'Amazon Prime');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000003', 'Hulu');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000004', 'Netflix');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000004', 'Disney+');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000005', 'Peacock');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000005', 'Apple TV+');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000006', 'Paramount+');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000006', 'HBO Max');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000009', 'Disney+');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000009', 'Amazon Prime');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000010', 'Disney+');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000010', 'HBO Max');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000011', 'Netflix');
+INSERT INTO Movie_Streaming (MovieID, Streaming)
+VALUES ('M000011', 'Amazon Prime');
+
+------------------------------------------------------------
+-- Inserts for Movie Review
+-- Dune
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000001', 'Visually Stunning', 'DesertWanderer15799', 'Dune is a breathtaking visual experience with a compelling story.', 9);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000001', 'Epic Sci-Fi', 'SpiceLover154', 'A must-watch for sci-fi fans. Denis Villeneuve delivers a masterpiece.', 10);
+
+-- Dune: Part 2
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000002', 'A Grand Sequel', 'ArrakisFan652', 'Dune: Part 2 is a thrilling continuation with stunning visuals.', 8);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000002', 'Amazing World-Building', 'SandwormRider135', 'The world-building in this sequel is unmatched. A true epic.', 9);
+
+-- Challengers
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000003', 'Unique and Emotional', 'TennisAce12', 'Challengers is a heartfelt drama with a unique perspective.', 7);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000003', 'Great Performances', 'LoveGameFan468', 'The performances in this movie are top-notch. A great watch.', 8);
+
+-- Interstellar
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000004', 'Mind-Blowing', 'CosmicTraveler123', 'Interstellar is a cinematic masterpiece that will leave you in awe.', 10);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000004', 'Emotional and Thought-Provoking', 'TimeWarpFan231457', 'A deeply emotional and thought-provoking journey through space.', 9);
+
+-- Oppenheimer
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000005', 'Powerful and Intense', 'AtomicWatcher2721', 'Oppenheimer is a gripping portrayal of history and science.', 9);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000005', 'A Masterpiece', 'ManhattanProjectFan1268', 'Christopher Nolan delivers a masterpiece with Oppenheimer.', 10);
+
+-- Saving Private Ryan
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000006', 'Heart-Wrenching', 'WW2HistoryBuff3517', 'A powerful and emotional depiction of the sacrifices of war.', 10);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000006', 'A War Classic', 'SoldierFan231', 'Saving Private Ryan is a timeless war movie that everyone should watch.', 9);
+
+-- Spider-Man: Homecoming
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000009', 'Fun and Entertaining', 'WebHead872', 'Spider-Man: Homecoming is a fresh and fun take on the superhero.', 9);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000009', 'Great Action', 'FriendlyNeighborhoodFan213', 'The action and humor in this movie are perfectly balanced.', 8);
+
+-- Captain America: Civil War
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000010', 'Epic Showdown', 'ShieldBearer547', 'Civil War is a thrilling and emotional clash between heroes.', 8);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000010', 'A Marvel Classic', 'TeamCapFan235', 'A must-watch for Marvel fans. The story and action are amazing.', 9);
+
+-- Uncharted
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000011', 'Exciting Adventure', 'TreasureHunter312', 'Uncharted is a fun and action-packed treasure-hunting movie.', 7);
+INSERT INTO Movie_Review (MovieID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('M000011', 'Great Adaptation', 'ExplorerFan767', 'A solid adaptation of the video game series. Very enjoyable.', 8);
+------------------------------------------------------------
+-- Inserts for TV Show Genre
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000001', 'Drama');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000001', 'Teen');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000002', 'Comedy');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000002', 'Family');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000003', 'Comedy');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000003', 'Action');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000004', 'Sci-Fi');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000004', 'Adventure');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000005', 'Documentary');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000006', 'Comedy');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000007', 'Reality');
+INSERT INTO TV_Show_Genre (TV_ShowID, Genre)
+VALUES ('T000008', 'Documentary');
+
+------------------------------------------------------------
+-- Inserts for TV Show Streaming
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000001', 'HBO Max');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000001', 'Amazon Prime');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000002', 'Disney+');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000002', 'Hulu');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000003', 'Disney+');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000003', 'Netflix');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000004', 'Sky');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000004', 'HBO Max');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000005', 'Amazon Prime');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000005', 'Apple TV+');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000006', 'Peacock');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000006', 'Hulu');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000007', 'HBO Max');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000007', 'Netflix');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000008', 'National Geographic');
+INSERT INTO TV_Show_Streaming (TV_ShowID, Streaming)
+VALUES ('T000008', 'Disney+');
+
+------------------------------------------------------------
+-- Inserts for TV Show Review
+-- Euphoria
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000001', 'Raw and Real', 'TeenLifeWatcher', 'Euphoria is a bold and unflinching look at teenage struggles.', 6);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000001', 'Incredible Acting', 'DramaQueen', 'The acting in Euphoria is phenomenal. A must-watch.', 10);
+
+-- Shake It Up
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000002', 'Fun for All Ages', 'DanceLover', 'Shake It Up is a charming and energetic show for the whole family.', 7);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000002', 'Great Chemistry', 'BestiesFan', 'The chemistry between the leads makes this show a joy to watch.', 9);
+
+-- KC Undercover
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000003', 'Action and Comedy', 'SpyFanatic', 'KC Undercover is a delightful mix of humor and spy action.', 7);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000003', 'Family Fun', 'UndercoverWatcher', 'A fun and exciting show for the whole family to enjoy.', 6);
+
+-- Intergalactic
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000004', 'Visually Stunning', 'SpaceExplorer', 'Intergalactic is a visually stunning and action-packed series.', 7);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000004', 'Great Sci-Fi', 'GalacticFan', 'A thrilling space adventure with a strong cast and story.', 9);
+
+-- A Man Named Scott
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000005', 'Inspiring and Creative', 'MusicLover', 'A Man Named Scott is a fascinating exploration of artistry.', 6);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000005', 'A Unique Perspective', 'DocuFan', 'A unique and inspiring documentary about creativity.', 8);
+
+-- Will & Grace
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000006', 'Hilarious and Heartwarming', 'SitcomLover', 'Will & Grace is a timeless sitcom that never gets old.', 10);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000006', 'A Classic', 'ComedyFan', 'A hilarious and heartwarming show with great characters.', 7);
+
+-- Project Green Light
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000007', 'Inspiring for Filmmakers', 'FilmFanatic', 'A great behind-the-scenes look at the filmmaking process.', 8);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000007', 'Unique and Educational', 'IndieFilmLover', 'Project Green Light is a unique and educational reality series.', 7);
+
+-- Years of Living Dangerously
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000008', 'Eye-Opening', 'ClimateWatcher', 'A powerful documentary series about climate change.', 9);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000008', 'Informative and Engaging', 'EcoFanatic', 'A must-watch for anyone interested in the environment.', 8);
+
+-- Peaky Blinders
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000009', 'Masterpiece', 'HistoricalFan', 'Peaky Blinders is a gripping and stylish historical drama.', 10);
+INSERT INTO TV_Show_Review (TV_ShowID, Title, Reviewer, ReviewContents, Rating)
+VALUES ('T000009', 'Brilliant Acting', 'DramaLover', 'The acting and storytelling in Peaky Blinders are phenomenal.', 9);
+------------------------------------------------------------
+-- Inserts for TV Show Episode
+
+-- Euphoria Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', 'Pilot', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', 'Stuntin'' Like My Daddy', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', 'Made You Look', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', 'Shook Ones Pt. II', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', '03 Bonnie and Clyde', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000001', 'The Next Episode', 6, 1);
+
+-- Shake It Up Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Start It Up', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Meatball It Up', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Give It Up', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Add It Up', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Kick It Up', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000002', 'Party It Up', 6, 1);
+
+-- KC Undercover Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'Pilot', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'My Sister from Another Mother... Board', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'Give Me a K! Give Me a C!', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'Off the Grid', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'Photo Bombed', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000003', 'How KC Got Her Swag Back', 6, 1);
+
+-- Intergalactic Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'It Begins', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'Prison Break', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'The Chase', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'The Truth', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'Betrayal', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000004', 'Final Stand', 6, 1);
+
+-- A Man Named Scott Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000005', 'A Man Named Scott', 1, 1);
+
+-- Will & Grace Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'Pilot', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'A New Lease on Life', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'Head Case', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'Between a Rock and Harlin''s Place', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'Boo! Humbug', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000006', 'William, Tell', 6, 1);
+
+-- Project Greenlight Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'The Pitch', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'The Decision', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'Pre-Production', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'The Shoot', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'Post-Production', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000007', 'The Premiere', 6, 1);
+
+-- Years of Living Dangerously Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'The Surge', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'End of the Woods', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'The Collapse', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'The Gathering Storm', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'The Race Against Time', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000008', 'The Reckoning', 6, 1);
+
+-- World of Calm Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Stillness Within', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Beauty of Nature', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Flow of Water', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Calm of the Forest', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Serenity of the Sky', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000010', 'The Rhythm of Life', 6, 1);
+
+-- Atlantic Episodes
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Wild Atlantic', 1, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Deep Abyss', 2, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Tropical Reefs', 3, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Frozen North', 4, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Migratory Pathways', 5, 1);
+INSERT INTO TV_Show_Episode (TV_ShowID, EpisodeTitle, EpisodeNumber, SeasonNumber)
+VALUES ('T000011', 'The Changing Ocean', 6, 1);
